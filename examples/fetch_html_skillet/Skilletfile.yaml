@@ -1,0 +1,32 @@
+# Fliiq Skillet spec v0.1
+name: fetch_html
+version: 0.1.0
+description: "Fetch raw HTML from a public URL (wrapper around Anthropic fetch MCP)."
+license: MIT
+
+runtime: python3.11          # supported: python, node, deno (MVP: python only)
+entry: main:handler          # module:function (async or sync)
+
+auth: none                   # or api_key / oauth2
+
+inputs:
+  url:
+    type: string
+    description: "Fully-qualified http(s) URL"
+  start_index:
+    type: integer
+    description: "Offset for pagination"
+    required: false
+  as_markdown:
+    type: boolean
+    description: "Return Markdown instead of HTML"
+    required: false
+
+outputs:
+  html:
+    type: string
+    description: "Raw HTML truncated to 10 000 chars"
+  markdown:
+    type: string
+    description: "HTML converted to Markdown (when as_markdown=true)"
+    required: false

@@ -1,0 +1,7 @@
+[project]
+name = "fliiq-skillet"
+version = "0.0.1"
+
+[project.scripts]
+skillet = "skillet_cli.cli:app"
+
