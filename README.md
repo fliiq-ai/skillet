@@ -25,7 +25,7 @@ workflows:
 
 ### Key Concepts
 
-* **Skillfile.yaml ≤50 lines** — declarative inputs/outputs, runtime & entry-point
+* **Skilletfile.yaml ≤50 lines** — declarative inputs/outputs, runtime & entry-point
 * **`skillet dev`** — hot-reload FastAPI stub for local testing
 * **`skillet deploy`** — one-command deploy to Workers/Lambda (more targets soon)
 * **Registry** — browse, star and import skills; share community "recipes" in the *Cookbook*
