@@ -14,7 +14,7 @@ async def handler(params: dict) -> dict:
       start_index: int  = 0        (optional)
     """
     try:
-        url = params["url"]
+    url = params["url"]
         as_md = params.get("as_markdown", False)
         start_index = max(0, int(params.get("start_index", 0) or 0))
         
@@ -22,7 +22,7 @@ async def handler(params: dict) -> dict:
         
         async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
             r = await client.get(url)
-            r.raise_for_status()
+        r.raise_for_status()
             content = r.text
             
         logger.info(f"Received content length: {len(content)}")

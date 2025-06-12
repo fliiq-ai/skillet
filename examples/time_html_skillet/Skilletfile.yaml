@@ -1,0 +1,30 @@
+# Fliiq Skillet spec v0.1
+name: get_current_time
+version: 0.1.0
+description: "Returns the current date and time in a specified timezone. Defaults to UTC if no timezone is provided."
+license: MIT
+
+runtime: python3.11
+entry: main:handler
+
+auth: none
+
+inputs:
+  timezone:
+    type: string
+    description: "IANA-compliant timezone name (e.g., 'America/New_York', 'Europe/Paris'). Defaults to UTC."
+    required: false
+
+outputs:
+  iso_8601:
+    type: string
+    description: "The full date and time in ISO 8601 format."
+  time:
+    type: string
+    description: "The current time in HH:MM:SS format."
+  date:
+    type: string
+    description: "The current date in YYYY-MM-DD format."
+  timezone:
+    type: string
+    description: "The timezone used for the calculation." 

@@ -44,7 +44,8 @@ skillet dev          # Swagger UI on http://127.0.0.1:8000
 
 The `examples/` directory contains reference implementations of Skillet skills:
 
-- [fetch_html_skillet](examples/fetch_html_skillet/README.md) - Fetches HTML content from URLs with markdown conversion and pagination support. A Skillet-compatible implementation of the Anthropic fetch MCP.
+- [fetch_html_skillet](examples/fetch_html_skillet/README.md) - Fetches HTML content from URLs with markdown conversion and pagination support. A Skillet-compatible implementation of the Anthropic `fetch` MCP.
+- [time_html_skillet](examples/time_html_skillet/README.md) - Returns the current date and time, with support for any IANA-compliant timezone. A Skillet-compatible implementation of the Anthropic `time` MCP.
 
 Each example includes:
 - A complete `Skilletfile.yaml` configuration
