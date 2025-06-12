@@ -1,0 +1,30 @@
+# Fliiq Skillet spec v0.1
+name: anthropic_memory
+version: 0.4.0
+description: "A stateful skill that provides a persistent knowledge graph, matching the Anthropic memory MCP."
+license: MIT
+
+runtime: python3.11
+entry: main:handler
+
+auth: none
+
+# The skillet uses a single 'operation' parameter.
+# The 'params' field is a JSON-encoded STRING due to limitations in the runtime's object validation.
+inputs:
+  operation:
+    type: string
+    description: "The action to perform. e.g., create_entities, read_graph, etc."
+    required: true
+  
+  params:
+    type: string
+    description: "A JSON-encoded string containing parameters for the operation."
+    required: false
+
+# The output is a flexible object whose structure depends on the operation.
+outputs:
+  response:
+    type: string
+    description: "A JSON-encoded string containing the result of the operation."
+    required: true 

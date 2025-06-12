@@ -4,7 +4,14 @@ This example demonstrates a basic Skillet skill that fetches HTML content from U
 
 ## Quick Start
 
+You'll need two terminal windows to run and test this skill:
+
+### Terminal 1: Start the Server
+
 ```bash
+# Make sure you're in the right directory
+cd examples/anthropic_fetch
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -12,13 +19,39 @@ pip install -r requirements.txt
 uvicorn skillet_runtime:app --reload
 ```
 
+The server will be available at `http://127.0.0.1:8000`. Keep this terminal open to see server logs.
+
+### Terminal 2: Run the Automated Tests
+
+In a new terminal window:
+```bash
+# Navigate to the same directory
+cd examples/anthropic_fetch
+
+# Run the automated tests
+./test.sh
+```
+
+A successful test run will show:
+```
+--- Testing Fetch HTML Skillet ---
+1. Fetching raw HTML...
+{"html":"<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n      <h1>Herman Melville - Moby-Dick</h1>...",...}
+
+2. Fetching as Markdown...
+{"html":null,"markdown":"Herman Melville - Moby-Dick\n===========================",...}
+
+3. Fetching with a start_index of 1500...
+{"html":"had finally given in; and so it came to pass...",...}
+```
+
 ## API Usage
 
-The skill exposes a single endpoint `/run` that accepts POST requests with the following options:
+You can also test individual endpoints manually using curl commands by making POST requests to the `/run` endpoint:
 
-### Basic HTML Fetch
+### 1. Basic HTML Fetch
 ```bash
-curl -X POST http://127.0.0.1:8000/run \
+curl -s -X POST http://127.0.0.1:8000/run \
   -H "Content-Type: application/json" \
   -d '{"url": "https://httpbin.org/html"}'
 ```
@@ -33,7 +66,7 @@ Response:
 
 ### Convert to Markdown
 ```bash
-curl -X POST http://127.0.0.1:8000/run \
+curl -s -X POST http://127.0.0.1:8000/run \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://httpbin.org/html",
@@ -51,12 +84,11 @@ Response:
 
 ### Pagination Support
 ```bash
-curl -X POST http://127.0.0.1:8000/run \
+curl -s -X POST http://127.0.0.1:8000/run \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://httpbin.org/html",
-    "start_index": 1500,
-    "as_markdown": true
+    "start_index": 1500
   }'
 ```
 

@@ -44,20 +44,49 @@ skillet dev          # Swagger UI on http://127.0.0.1:8000
 
 The `examples/` directory contains reference implementations of Skillet skills:
 
-- [fetch_html_skillet](examples/fetch_html_skillet/README.md) - Fetches HTML content from URLs with markdown conversion and pagination support. A Skillet-compatible implementation of the Anthropic `fetch` MCP.
-- [time_html_skillet](examples/time_html_skillet/README.md) - Returns the current date and time, with support for any IANA-compliant timezone. A Skillet-compatible implementation of the Anthropic `time` MCP.
+- [anthropic_fetch](examples/anthropic_fetch/README.md) - Fetches HTML content from URLs. A Skillet-compatible implementation of the Anthropic `fetch` MCP.
+- [anthropic_time](examples/anthropic_time/README.md) - Returns the current time in any timezone. A Skillet-compatible implementation of the Anthropic `time` MCP.
+- [anthropic_memory](examples/anthropic_memory/README.md) - A stateful skill that provides a simple in-memory key-value store. A Skillet-compatible implementation of the Anthropic `memory` MCP.
 
 Each example includes:
 - A complete `Skilletfile.yaml` configuration
-- Implementation code
 - API documentation and usage examples
-- Tests demonstrating the skill's capabilities
+- An automated `test.sh` script to verify functionality
 
-To try an example:
+### Testing the Examples
+
+To test any example, you'll need two terminal windows:
+
+1. First terminal - Start the server:
 ```bash
-cd examples/fetch_html_skillet
+cd examples/[example_name]  # e.g., anthropic_fetch, anthropic_time, anthropic_memory
 pip install -r requirements.txt
 uvicorn skillet_runtime:app --reload
 ```
 
-Then follow the example-specific README for API usage instructions.
+2. Second terminal - Run the tests:
+```bash
+cd examples/[example_name]  # same directory as above
+./test.sh
+```
+
+A successful test run will show:
+- All test cases executing without errors
+- Expected JSON responses for successful operations
+- Proper error handling for edge cases
+- Server logs in the first terminal showing request handling
+
+For example, a successful time skill test should show:
+```
+--- Testing Time Skillet ---
+1. Getting current time in UTC (default)...
+{"iso_8601":"2025-06-12T04:46:33+00:00", ...}
+
+2. Getting current time in America/New_York...
+{"iso_8601":"2025-06-12T00:46:33-04:00", ...}
+
+3. Testing with an invalid timezone...
+{"detail":"400: Invalid timezone: 'Mars/Olympus_Mons'..."}
+```
+
+See each example's specific README for detailed API usage instructions and expected responses.
