@@ -53,7 +53,7 @@ Each example includes:
 - API documentation and usage examples
 - An automated `test.sh` script to verify functionality
 
-### Testing the Examples
+### Testing the Examples Using the Automated Test Scripts
 
 To test any example, you'll need two terminal windows:
 
@@ -90,3 +90,46 @@ For example, a successful time skill test should show:
 ```
 
 See each example's specific README for detailed API usage instructions and expected responses.
+
+## Tutorials: Using Skillet in Your Applications
+
+The `tutorials/` directory contains example applications that demonstrate how to integrate Skillet skills into your own applications. These tutorials show real-world usage patterns and best practices for developers who want to use Skillet skills in their projects.
+
+### Available Tutorials
+
+- [openai_time_demo](tutorials/openai_time_demo/README.md) - Shows how to use OpenAI's GPT models with the Skillet time skill. This tutorial demonstrates:
+  - Setting up OpenAI function calling with Skillet endpoints
+  - Making HTTP requests to Skillet services
+  - Handling responses and errors
+  - Building an interactive CLI application
+
+Each tutorial includes:
+- Complete working code with comments
+- Clear setup instructions
+- Dependencies and environment configuration
+- Best practices for production use
+
+### Using the Tutorials
+
+1. Choose a tutorial that matches your use case
+2. Follow the README instructions in the tutorial directory
+3. Use the code as a template for your own application
+
+The tutorials are designed to be minimal yet production-ready examples that you can build upon. They demonstrate how to:
+- Make API calls to Skillet skills
+- Handle authentication and environment variables
+- Process responses and handle errors
+- Structure your application code
+
+For example, to try the OpenAI + Skillet time demo:
+```bash
+# First, start the Skillet time service
+cd examples/anthropic_time
+pip install -r requirements.txt
+uvicorn skillet_runtime:app --reload
+
+# In a new terminal, run the OpenAI demo
+cd tutorials/openai_time_demo
+pip install -r requirements.txt
+python main.py
+```
