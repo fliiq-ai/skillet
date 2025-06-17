@@ -1,7 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "fliiq-skillet"
 version = "0.0.1"
+authors = [
+    { name = "Fliiq", email = "hello@fliiq.ai" }
+]
+description = "HTTP-native, OpenAPI-first framework for packaging and running reusable skills"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 
 [project.scripts]
 skillet = "skillet_cli.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["skillet_cli*"]
+exclude = ["examples*", "tutorials*"]
 
