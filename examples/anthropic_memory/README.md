@@ -40,6 +40,31 @@ cd examples/anthropic_memory
 ```
 A successful run will execute 10 test steps, showing the JSON response for each operation.
 
+## Schema Discovery
+
+Before using the memory skill, you can retrieve its complete schema to understand all available operations and their parameters:
+
+```bash
+curl -s -X GET http://127.0.0.1:8000/schema \
+  -H "Content-Type: application/json"
+```
+
+The schema response includes:
+- **Basic tool information**: name, description, version
+- **General parameters**: operation types and parameter structure
+- **Detailed operations**: Complete specification for all 9 operations:
+  - `create_entities` - Create new entities with observations
+  - `create_relations` - Link entities with relationships
+  - `add_observations` - Add facts to existing entities
+  - `read_graph` - Retrieve the entire knowledge graph
+  - `search_nodes` - Find entities matching a query
+  - `open_nodes` - Get specific entities by name
+  - `delete_observations` - Remove specific facts from entities
+  - `delete_relations` - Remove relationships between entities
+  - `delete_entities` - Remove entities and all their connections
+
+Each operation includes detailed parameter schemas, making it easy for LLM applications to understand exactly how to interact with the memory system.
+
 ## API Usage
 
 You can also test individual endpoints manually by making POST requests to the `/run` endpoint. The desired action is specified using the `operation` parameter in the JSON payload.

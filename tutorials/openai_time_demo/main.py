@@ -17,7 +17,23 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 console = Console()
 
 # Skillet time service configuration
-SKILLET_TIME_URL = "http://localhost:8000/run"
+SKILLET_TIME_URL = os.getenv("SKILLET_TIME_URL", "http://localhost:8000/run")
+SKILLET_SCHEMA_URL = os.getenv("SKILLET_SCHEMA_URL", "http://localhost:8000/schema")
+
+def get_tool_schema() -> Dict[str, Any]:
+    """
+    Fetch the tool schema from the Skillet service.
+    
+    Returns:
+        Dict containing the tool schema
+    """
+    try:
+        response = requests.get(SKILLET_SCHEMA_URL)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        console.print(f"[red]Error fetching tool schema: {e}[/red]")
+        return {}
 
 def get_time(timezone: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -38,30 +54,38 @@ def get_time(timezone: Optional[str] = None) -> Dict[str, Any]:
         console.print(f"[red]Error calling Skillet time service: {e}[/red]")
         return {"error": str(e)}
 
-# Define the function that OpenAI can call
-functions = [
-    {
+def create_openai_function_from_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert Skillet schema to OpenAI function calling format.
+    
+    Args:
+        schema: Skillet tool schema
+    
+    Returns:
+        OpenAI function definition
+    """
+    return {
         "name": "get_time",
-        "description": "Get the current time in any timezone",
-        "parameters": {
+        "description": schema.get("description", "Get the current time"),
+        "parameters": schema.get("parameters", {
             "type": "object",
             "properties": {
                 "timezone": {
                     "type": "string",
-                    "description": "IANA timezone identifier (e.g., 'America/New_York', 'Asia/Tokyo')"
+                    "description": "IANA timezone identifier"
                 }
             },
             "required": []
-        }
+        })
     }
-]
 
-def process_user_query(user_input: str) -> str:
+def process_user_query(user_input: str, functions: list) -> str:
     """
     Process user input through OpenAI and get time information.
     
     Args:
         user_input: User's question about time
+        functions: List of available functions
     
     Returns:
         Formatted response string
@@ -114,9 +138,23 @@ def main():
     """Main interactive loop."""
     console.print(Panel.fit(
         "[yellow]Welcome to the OpenAI + Skillet Time Demo![/yellow]\n"
+        "This demo dynamically discovers the Skillet tool schema.\n"
         "Ask me about the time in any timezone!\n"
         "Type 'quit' to exit."
     ))
+    
+    # Fetch the tool schema from the Skillet service
+    console.print("\n[blue]Fetching tool schema from Skillet service...[/blue]")
+    schema = get_tool_schema()
+    
+    if not schema:
+        console.print("[red]Failed to fetch tool schema. Make sure the Skillet service is running.[/red]")
+        return
+    
+    console.print(f"[green]✓ Loaded tool: {schema.get('name', 'Unknown')} v{schema.get('version', '0.0.0')}[/green]")
+    
+    # Convert schema to OpenAI function format
+    functions = [create_openai_function_from_schema(schema)]
     
     while True:
         try:
@@ -130,7 +168,7 @@ def main():
             
             # Process the query
             console.print("\n[bold blue]Assistant:[/bold blue]", end=" ")
-            response = process_user_query(user_input)
+            response = process_user_query(user_input, functions)
             console.print(response)
             
         except KeyboardInterrupt:

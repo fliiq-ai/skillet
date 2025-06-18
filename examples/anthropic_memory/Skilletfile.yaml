@@ -5,7 +5,7 @@ description: "A stateful skill that provides a persistent knowledge graph, match
 license: MIT
 
 runtime: python3.11
-entry: main:handler
+entry: anthropic_memory:handler
 
 auth: none
 

@@ -21,7 +21,7 @@ uvicorn skillet_runtime:app --reload
 
 The server will be available at `http://127.0.0.1:8000`. Keep this terminal open to see server logs.
 
-### Terminal 2: Run the Tests
+### Terminal 2: Run the Automated Tests
 
 In a new terminal window:
 ```bash
@@ -35,21 +35,62 @@ cd examples/anthropic_time
 A successful test run will show:
 ```
 --- Testing Time Skillet ---
-1. Getting current time in UTC (default)...
+0. Getting skill inventory...
+{"skill":{"name":"get_current_time","description":"Returns the current date and time...","use_cases":["When user asks about the current time"...]}}
+
+1. Getting tool schema...
+{"name":"get_current_time","description":"Returns the current date and time..."}
+
+2. Getting current time in UTC (default)...
 {"iso_8601":"2025-06-12T04:46:33+00:00",...}
 
-2. Getting current time in America/New_York...
+3. Getting current time in America/New_York...
 {"iso_8601":"2025-06-12T00:46:33-04:00",...}
 
-3. Testing with an invalid timezone...
+4. Testing with an invalid timezone...
 {"detail":"400: Invalid timezone: 'Mars/Olympus_Mons'..."}
 ```
 
 ## API Usage
 
-You can also test individual endpoints manually using curl commands by making POST requests to the `/run` endpoint:
+The skill provides three main endpoints for different purposes:
 
-### 1. Get Current Time in UTC (Default)
+### Inventory Endpoint: Skill Discovery
+
+For LLM agents to understand when and how to use this skill:
+
+```bash
+curl -s -X GET http://127.0.0.1:8000/inventory \
+  -H "Content-Type: application/json"
+```
+
+This returns metadata that helps LLMs decide when to use this skill:
+- **Use cases**: When this skill should be selected
+- **Example queries**: Sample user inputs that would trigger this skill
+- **Categories and tags**: For skill classification and discovery
+- **Performance characteristics**: To help with resource planning
+- **Workflow position**: Where this skill fits in typical workflows
+
+### Schema Endpoint: Technical Specification
+
+For understanding the exact inputs and outputs:
+
+```bash
+curl -s -X GET http://127.0.0.1:8000/schema \
+  -H "Content-Type: application/json"
+```
+
+This returns a standardized schema that includes:
+- Tool name, description, and version
+- Input parameters with types and descriptions
+- Output schema with expected return format
+- Endpoint and method information
+
+### Execution Endpoint: Run the Skill
+
+You can execute the skill by making POST requests to the `/run` endpoint:
+
+#### 1. Get Current Time in UTC (Default)
 
 Send a request with an empty JSON object to get the time in the default UTC timezone.
 
@@ -59,7 +100,7 @@ curl -s -X POST http://127.0.0.1:8000/run \
   -d '{}'
 ```
 
-### 2. Get Current Time in a Specific Timezone
+#### 2. Get Current Time in a Specific Timezone
 
 Provide a timezone in the JSON payload to get the time for that location.
 
@@ -69,7 +110,7 @@ curl -s -X POST http://127.0.0.1:8000/run \
   -d '{"timezone": "America/Los_Angeles"}'
 ```
 
-### 3. Handle Invalid Timezone
+#### 3. Handle Invalid Timezone
 
 The skill will return an HTTP 500 error with a descriptive message if the timezone is not valid.
 

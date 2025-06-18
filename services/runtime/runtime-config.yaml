@@ -1,0 +1,33 @@
+# Skillet Multi-Skill Runtime Configuration
+# This file defines which skills to load and how to configure the runtime host
+
+skills:
+  # Time Skill - Provides current time and date information
+  - name: time_skill
+    path: ../../examples/anthropic_time
+    mount: time
+    enabled: true
+    
+  # Fetch Skill - Fetches HTML content from URLs  
+  - name: fetch_skill
+    path: ../../examples/anthropic_fetch
+    mount: fetch
+    enabled: true
+    
+  # Memory Skill - Persistent knowledge graph storage
+  - name: memory_skill
+    path: ../../examples/anthropic_memory
+    mount: memory
+    enabled: true
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8000
+  reload: true
+  
+# Optional: Global settings
+settings:
+  cors_enabled: true
+  auto_reload_config: false
+  log_level: info 

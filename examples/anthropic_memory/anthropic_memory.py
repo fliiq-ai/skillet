@@ -12,7 +12,9 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MEMORY_FILE_PATH = os.getenv("MEMORY_FILE_PATH", "memory.json")
+# Get the directory where this script is located for the memory file
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MEMORY_FILE_PATH = os.getenv("MEMORY_FILE_PATH", os.path.join(SCRIPT_DIR, "memory.json"))
 
 class KnowledgeGraph:
     """Manages the knowledge graph, including persistence."""
@@ -146,7 +148,7 @@ class KnowledgeGraph:
 # This is crucial for maintaining state between requests.
 graph = KnowledgeGraph(MEMORY_FILE_PATH)
 
-async def handler(params: dict) -> dict:
+def handler(params: dict) -> dict:
     """Dispatches requests to the appropriate KnowledgeGraph method."""
     operation = params.get("operation")
     if not operation:

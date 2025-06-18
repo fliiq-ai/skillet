@@ -5,7 +5,7 @@ description: "Fetch raw HTML from a public URL (wrapper around Anthropic fetch M
 license: MIT
 
 runtime: python3.11          # supported: python, node, deno (MVP: python only)
-entry: main:handler          # module:function (async or sync)
+entry: anthropic_fetch:handler          # module:function (async or sync)
 
 auth: none                   # or api_key / oauth2
 

@@ -1,0 +1,16 @@
+# Skillet Discovery Service Configuration
+# List all Skillet skill endpoints that should be included in the catalog
+
+skills:
+  # Local development skills (default ports)
+  - "http://localhost:8001"  # anthropic_time
+  - "http://localhost:8002"  # anthropic_fetch
+  - "http://localhost:8003"  # anthropic_memory
+  
+  # Add your production skills here:
+  # - "https://your-skill-1.example.com"
+  # - "https://your-skill-2.example.com"
+  
+# Optional: Configure refresh intervals, timeouts, etc.
+# refresh_interval: 300  # seconds
+# request_timeout: 5     # seconds 
