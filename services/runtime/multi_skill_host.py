@@ -71,12 +71,22 @@ class MultiSkillHost:
     def load_skills_from_config(self):
         """Load skills based on configuration file."""
         if not os.path.exists(self.config_path):
-            print(f"⚠️  Configuration file {self.config_path} not found. Creating default config.")
-            self.create_default_config()
+            print(f"⚠️  Configuration file {self.config_path} not found.")
+            
+            # Check if example config exists
+            example_config = self.config_path.replace('.yaml', '.example.yaml')
+            if os.path.exists(example_config):
+                print(f"📋 Using example configuration: {example_config}")
+                import shutil
+                shutil.copy2(example_config, self.config_path)
+                print(f"📝 Copied {example_config} → {self.config_path}")
+            else:
+                print("🔍 Creating default config with auto-discovery.")
+                self.create_default_config()
         
         try:
             with open(self.config_path, 'r') as f:
-                config = yaml.safe_load(f)
+                config = yaml.safe_load(f) or {}
             
             skills_config = config.get('skills', [])
             print(f"📋 Loading {len(skills_config)} skills from configuration...")
@@ -94,28 +104,32 @@ class MultiSkillHost:
             raise
     
     def create_default_config(self):
-        """Create a default configuration file with example skills."""
+        """Create a default configuration file by auto-discovering all example skills."""
+        print("🔍 Auto-discovering skills in examples directory...")
+        
+        # Auto-discover all skills in examples directory
+        examples_dir = self.base_path / "examples"
+        discovered_skills = []
+        
+        if examples_dir.exists():
+            for skill_dir in examples_dir.iterdir():
+                if skill_dir.is_dir() and (skill_dir / "skillet_runtime.py").exists():
+                    skill_name = skill_dir.name
+                    mount_name = skill_name.replace("_", "-")  # Use hyphens for URL-friendly mount paths
+                    
+                    discovered_skills.append({
+                        'name': f'{skill_name}_skill',
+                        'path': f'./examples/{skill_name}',
+                        'mount': mount_name,
+                        'enabled': True
+                    })
+                    print(f"  ✅ Found skill: {skill_name}")
+        
+        # Sort skills alphabetically for consistent ordering
+        discovered_skills.sort(key=lambda x: x['name'])
+        
         default_config = {
-            'skills': [
-                {
-                    'name': 'time_skill',
-                    'path': './examples/anthropic_time',
-                    'mount': 'time',
-                    'enabled': True
-                },
-                {
-                    'name': 'fetch_skill',
-                    'path': './examples/anthropic_fetch',
-                    'mount': 'fetch',
-                    'enabled': True
-                },
-                {
-                    'name': 'memory_skill',
-                    'path': './examples/anthropic_memory',
-                    'mount': 'memory',
-                    'enabled': True
-                }
-            ],
+            'skills': discovered_skills,
             'server': {
                 'host': '0.0.0.0',
                 'port': 8000,
@@ -126,7 +140,8 @@ class MultiSkillHost:
         with open(self.config_path, 'w') as f:
             yaml.dump(default_config, f, default_flow_style=False, indent=2)
         
-        print(f"📝 Created default configuration: {self.config_path}")
+        print(f"📝 Created default configuration with {len(discovered_skills)} skills: {self.config_path}")
+        print(f"🎯 Discovered skills: {', '.join([s['name'] for s in discovered_skills])}")
     
     def load_skill(self, skill_config: Dict[str, Any]):
         """Load a single skill and mount it to the main app."""
@@ -311,6 +326,48 @@ class MultiSkillHost:
                 return JSONResponse(
                     status_code=500,
                     content={"error": f"Failed to reload skills: {e}"}
+                )
+        
+        @self.app.post("/rediscover")
+        async def rediscover_skills():
+            """Rediscover skills from examples directory and update configuration."""
+            try:
+                print("🔍 Rediscovering skills...")
+                
+                # Backup existing config if it exists
+                if os.path.exists(self.config_path):
+                    import shutil
+                    backup_path = f"{self.config_path}.backup"
+                    shutil.copy2(self.config_path, backup_path)
+                    print(f"💾 Backed up existing config to: {backup_path}")
+                
+                # Create new config with auto-discovery
+                self.create_default_config()
+                
+                # Clear and reload skills
+                old_skills = list(self.skills.keys())
+                self.skills.clear()
+                self.load_skills_from_config()
+                
+                return {
+                    "message": f"Rediscovered and loaded {len(self.skills)} skills",
+                    "old_skills": old_skills,
+                    "new_skills": list(self.skills.keys()),
+                    "total_loaded": len(self.skills),
+                    "skills": {
+                        name: {
+                            "name": skill.name,
+                            "mount_path": skill.mount_path,
+                            "path": skill.path
+                        }
+                        for name, skill in self.skills.items()
+                    }
+                }
+                
+            except Exception as e:
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": f"Failed to rediscover skills: {e}"}
                 )
     
     async def get_skill_inventory(self, skill_name: str) -> Optional[Dict[str, Any]]:
