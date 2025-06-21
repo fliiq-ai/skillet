@@ -1,0 +1,40 @@
+name: context7_docs
+description: Retrieve up-to-date documentation for libraries and frameworks
+version: "1.0.0"
+runtime: python
+entry_point: skillet_runtime.py
+
+inputs:
+  query:
+    type: string
+    description: Documentation query or library name
+    required: true
+  library:
+    type: string
+    description: Specific library or framework name
+    required: false
+  version:
+    type: string
+    description: Specific version (defaults to latest)
+    required: false
+    default: "latest"
+  max_results:
+    type: integer
+    description: Maximum number of documentation results
+    required: false
+    default: 5
+
+outputs:
+  documentation:
+    type: string
+    description: Retrieved documentation content
+  source_url:
+    type: string
+    description: URL of the documentation source
+  library_info:
+    type: object
+    description: Information about the library/framework
+  results_count:
+    type: integer
+    description: Number of documentation results found
+

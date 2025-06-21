@@ -2,6 +2,15 @@
 
 This skill returns the current date and time, with support for any IANA-compliant timezone. It serves as a Skillet-compatible implementation of the Anthropic `time` MCP.
 
+## 🔐 **Credential Requirements**
+
+✅ **No credentials required!** This skill works out of the box without any API keys or configuration.
+
+This makes it perfect for:
+- Testing and learning Skillet concepts
+- Development environments
+- Situations where you need reliable functionality without external dependencies
+
 ## Quick Start
 
 You'll need two terminal windows to run and test this skill:

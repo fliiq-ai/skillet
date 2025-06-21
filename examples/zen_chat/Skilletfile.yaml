@@ -1,0 +1,33 @@
+name: zen_chat
+description: Collaborative thinking with AI models through Zen MCP orchestration
+version: "1.0.0"
+runtime: python
+entry_point: skillet_runtime.py
+
+inputs:
+  prompt:
+    type: string
+    description: The prompt or question to discuss with AI models
+    required: true
+  model:
+    type: string
+    description: Preferred AI model (gemini, openai, auto)
+    required: false
+    default: "auto"
+  max_tokens:
+    type: integer
+    description: Maximum tokens for the response
+    required: false
+    default: 1000
+
+outputs:
+  response:
+    type: string
+    description: AI model response to the prompt
+  model_used:
+    type: string
+    description: The actual model that was used for the response
+  reasoning:
+    type: string
+    description: Brief explanation of why this model was chosen
+

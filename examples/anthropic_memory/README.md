@@ -9,6 +9,16 @@ The skill allows an agent to remember information about users, entities, and the
 - **Relations**: Directed connections between entities (e.g., `John_Smith` -> `works_at` -> `Anthropic`).
 - **Observations**: Atomic pieces of string-based information attached to an entity (e.g., "Speaks fluent Spanish").
 
+## 🔐 **Credential Requirements**
+
+✅ **No credentials required!** This skill uses in-memory storage without any external APIs or databases.
+
+This makes it perfect for:
+- Testing and learning Skillet concepts
+- Local development and prototyping
+- Building context-aware applications
+- Knowledge graph experimentation
+
 ## Quick Start
 
 You'll need two terminal windows to run and test this skill:

@@ -2,6 +2,16 @@
 
 This example demonstrates a basic Skillet skill that fetches HTML content from URLs, with options for markdown conversion and pagination. It's a Skillet-compatible implementation of the Anthropic fetch MCP.
 
+## 🔐 **Credential Requirements**
+
+✅ **No credentials required!** This skill works with public URLs without any API keys or configuration.
+
+This makes it perfect for:
+- Testing and learning Skillet concepts
+- Fetching content from public websites
+- Development environments without credential management
+- Web scraping and content analysis tasks
+
 ## Quick Start
 
 You'll need two terminal windows to run and test this skill:
