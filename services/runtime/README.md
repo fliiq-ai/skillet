@@ -1,6 +1,6 @@
 # Skillet Multi-Skill Runtime Host
 
-A FastAPI application that dynamically loads and hosts multiple Skillet skills in a single service, solving the "10+ microservices" problem while preserving all individual skill functionality.
+A FastAPI application that dynamically loads and hosts multiple Skillet skills in a single service, solving the "10+ microservices" problem while preserving all individual skill functionality. This is for the use case where developers do not want to host or spin up specific skillets but rather spin up multiple skillets or all possible skillets in the Fliiq Skillet Library at once.
 
 ## Problem Solved
 
@@ -132,53 +132,51 @@ curl -s http://localhost:8000/skills/time/run -X POST -H "Content-Type: applicat
 
 ## Configuration
 
-### Basic Configuration
+The Multi-Skill Runtime Host uses a YAML configuration file to define which skills to load and how to serve them.
+
+### Configuration Files
+
+**📋 Template Configuration:**
+- `runtime-config.example.yaml` - Example configuration with all available skills (committed to git)
+
+**🔧 Working Configuration:**  
+- `runtime-config.yaml` - Local working configuration (gitignored, auto-generated)
+
+### Setup Process
+
+1. **First Run**: The host automatically copies `runtime-config.example.yaml` → `runtime-config.yaml`
+2. **Customize**: Edit `runtime-config.yaml` to enable/disable specific skills
+3. **Version Control**: Your local changes won't conflict with repository updates
+
+### Configuration Structure
 
 ```yaml
-# runtime-config.yaml
-skills:
-  - name: my_skill
-    path: ./path/to/skill
-    mount: my_skill
-    enabled: true
-
+# Server settings
 server:
   host: 0.0.0.0
   port: 8000
   reload: true
-```
 
-### Advanced Configuration
-
-```yaml
+# Skills to load
 skills:
-  # Local skill
   - name: time_skill
     path: ./examples/anthropic_time
     mount: time
     enabled: true
     
-  # Skill with custom dependencies
-  - name: custom_skill
-    path: ./custom/skills/my_skill
-    mount: custom
-    enabled: true
-    
-  # Disabled skill (for testing)
-  - name: experimental_skill
-    path: ./experimental/skill
-    mount: experimental  
-    enabled: false
+  - name: fetch_skill
+    path: ./examples/anthropic_fetch
+    mount: fetch
+    enabled: false  # Disable specific skills
+```
 
-server:
-  host: 0.0.0.0
-  port: 8000
-  reload: true
+### Auto-Discovery
 
-settings:
-  cors_enabled: true
-  auto_reload_config: false
-  log_level: info
+If no configuration exists, the host will automatically discover all skills in the `examples/` directory:
+
+```bash
+# Force auto-discovery (creates new runtime-config.yaml)
+curl -X POST http://localhost:8000/rediscover
 ```
 
 ## Usage Examples

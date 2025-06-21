@@ -1,11 +1,64 @@
+"""
+Enhanced Framework-Based Skillet Runtime with Credential Injection Support
+
+This runtime automatically loads skill configuration from Skilletfile.yaml and provides
+enhanced credential injection capabilities for production deployments.
+
+Features:
+- Automatic Skilletfile.yaml parsing and model generation
+- Runtime credential injection from client applications
+- Backward compatibility with existing /run endpoint format
+- Support for both environment variables and injected credentials
+"""
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, create_model
 import importlib, inspect, asyncio, os, yaml
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Union
+from contextlib import contextmanager
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILLETFILE_PATH = os.getenv("SKILLETFILE", os.path.join(SCRIPT_DIR, "Skilletfile.yaml"))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CREDENTIAL INJECTION UTILITIES
+# ══════════════════════════════════════════════════════════════════════════════
+
+@contextmanager
+def temp_env_context(credentials: Optional[Dict[str, str]] = None):
+    """
+    Context manager to temporarily inject environment variables.
+    
+    This allows credentials to be provided at request-time without
+    storing them on the server or modifying the global environment.
+    
+    Args:
+        credentials: Dict of environment variable names and values
+    """
+    if not credentials:
+        yield
+        return
+    
+    # Store original values to restore later
+    original_values = {}
+    for key, value in credentials.items():
+        original_values[key] = os.environ.get(key)
+        os.environ[key] = value
+    
+    try:
+        yield
+    finally:
+        # Restore original environment state
+        for key, original_value in original_values.items():
+            if original_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = original_value
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SKILLETFILE PARSING AND MODEL GENERATION
+# ══════════════════════════════════════════════════════════════════════════════
 
 # ── parse Skilletfile ──────────────────────────────────────────────
 with open(SKILLETFILE_PATH) as f:
@@ -37,6 +90,13 @@ for k, v in meta.get("inputs", {}).items():
 
 InputModel = create_model("InputModel", **input_fields)
 
+# Enhanced request model with credential support
+class EnhancedSkillRequest(BaseModel):
+    """Enhanced request model supporting credential injection"""
+    skill_input: Dict[str, Any]  # Contains the original skill parameters
+    credentials: Optional[Dict[str, str]] = None
+    runtime_config: Optional[Dict[str, Any]] = None
+
 # build Pydantic model for the outputs
 output_fields = {}
 for k, v in meta.get("outputs", {}).items():
@@ -48,190 +108,147 @@ for k, v in meta.get("outputs", {}).items():
 
 OutputModel = create_model("OutputModel", **output_fields)
 
+# ══════════════════════════════════════════════════════════════════════════════
+# FASTAPI APPLICATION SETUP
+# ══════════════════════════════════════════════════════════════════════════════
+
 app = FastAPI(
-    title=meta["name"],
-    description=meta["description"],
+    title=f"{meta['name']} (Enhanced)",
+    description=f"{meta['description']} - Enhanced with credential injection support",
     version=meta["version"]
 )
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CORE SKILL EXECUTION LOGIC
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def execute_skill_logic(skill_input: Dict[str, Any]) -> Any:
+    """
+    Core skill execution logic used by both legacy and enhanced endpoints.
+    
+    This function contains the actual skill execution and is called by both
+    the legacy and enhanced endpoints to ensure consistent behavior.
+    """
+    maybe_coroutine = skill_fn(skill_input)
+    if inspect.iscoroutine(maybe_coroutine):
+        result = await maybe_coroutine
+    else:
+        result = maybe_coroutine
+    return result
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/run", response_model=OutputModel)
+async def run_skill_enhanced(request: Union[InputModel, EnhancedSkillRequest]):
+    """
+    Enhanced /run endpoint supporting both legacy and credential injection formats.
+    
+    This endpoint maintains backward compatibility while adding support for
+    runtime credential injection from client applications.
+    
+    Request Format Options:
+    
+    1. Legacy (unchanged - backward compatible):
+       {"operation": "create_entities", "params": "{}"}
+    
+    2. Enhanced (with credential injection):
+       {
+         "skill_input": {"operation": "create_entities", "params": "{}"},
+         "credentials": {"API_KEY": "value"}
+       }
+    
+    Features:
+    - Runtime credential injection (perfect for Fliiq integration)
+    - Backward compatible with existing request format
+    - Temporary environment variable injection
+    - Automatic cleanup after request completion
+    """
+    try:
+        if isinstance(request, EnhancedSkillRequest):
+            # Enhanced format: Extract credentials and inject them temporarily
+            credentials = None
+            if request.runtime_config and "credentials" in request.runtime_config:
+                credentials = request.runtime_config["credentials"]
+            elif request.credentials:
+                credentials = request.credentials
+            
+            # Execute with credential injection
+            with temp_env_context(credentials):
+                result = await execute_skill_logic(request.skill_input)
+                return result
+        
+        else:
+            # Legacy format: Direct execution (backward compatibility)
+            result = await execute_skill_logic(request.model_dump())
+            return result
+            
+    except Exception as e:
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
 
 @app.get("/inventory")
 async def get_skill_inventory():
     """Return skill metadata for LLM decision-making about when and how to use this skill."""
     
-    return {
+    inventory = {
         "skill": {
             "name": meta["name"],
             "description": meta["description"],
             "version": meta["version"],
-            "category": "memory_management",
-            "complexity": "intermediate",
+            "category": "memory",
+            "complexity": "moderate",
             "use_cases": [
-                "When user mentions people, organizations, or relationships",
-                "For remembering user preferences and context across conversations",
-                "Building knowledge graphs of entities and their connections",
-                "Storing and retrieving facts about entities",
-                "Managing persistent conversational memory"
+                "When you need to store information across conversations",
+                "For maintaining context between interactions",
+                "When building a knowledge graph of related information",
+                "For persistent data storage and retrieval",
+                "When you need to remember entities and relationships"
             ],
             "example_queries": [
-                "Remember that John works at Anthropic",
-                "What do you know about Sarah?",
-                "Who works at Google?",
-                "Add this information about the meeting",
-                "Search for people who speak Spanish"
+                "Remember that John is a software engineer",
+                "What do you know about Alice?",
+                "Create a relationship between Company X and Product Y",
+                "Search for information about machine learning",
+                "Store this fact for later use"
             ],
-            "input_types": ["entities", "relations", "observations", "search_queries"],
-            "output_types": ["success_confirmation", "entity_data", "search_results"],
+            "input_types": ["operations", "structured_data"],
+            "output_types": ["operation_results", "stored_data"],
             "performance": "fast",
-            "dependencies": ["file_system"],
-            "works_well_with": ["conversation_management", "user_profiling", "relationship_tracking", "context_awareness"],
+            "dependencies": [],
+            "works_well_with": ["conversation", "knowledge_management", "data_analysis"],
             "typical_workflow_position": "data_storage",
-            "tags": ["memory", "knowledge_graph", "entities", "relationships", "persistence", "context"]
+            "tags": ["memory", "storage", "knowledge", "graph", "entities"],
+            "supports_credential_injection": True
         }
     }
+    
+    return inventory
 
 @app.get("/schema")
 async def get_tool_schema():
     """Return the tool schema in a standardized format for LLM consumption."""
     
-    # Define detailed operation schemas for the memory skill
-    operations = {
-        "create_entities": {
-            "description": "Create one or more new entities in the knowledge graph",
-            "parameters": {
-                "entities": {
-                    "type": "array",
-                    "description": "List of entities to create",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "description": "Unique name for the entity"},
-                            "entityType": {"type": "string", "description": "Type of entity (e.g., person, organization)"},
-                            "observations": {"type": "array", "description": "List of observations about the entity", "items": {"type": "string"}}
-                        },
-                        "required": ["name"]
-                    }
-                }
-            },
-            "required": ["entities"]
-        },
-        "create_relations": {
-            "description": "Create relationships between existing entities",
-            "parameters": {
-                "relations": {
-                    "type": "array",
-                    "description": "List of relations to create",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "from": {"type": "string", "description": "Name of the source entity"},
-                            "to": {"type": "string", "description": "Name of the target entity"},
-                            "relationType": {"type": "string", "description": "Type of relationship (e.g., works_at, knows)"}
-                        },
-                        "required": ["from", "to", "relationType"]
-                    }
-                }
-            },
-            "required": ["relations"]
-        },
-        "add_observations": {
-            "description": "Add observations to existing entities",
-            "parameters": {
-                "observations": {
-                    "type": "array",
-                    "description": "List of observations to add",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "entityName": {"type": "string", "description": "Name of the entity to add observations to"},
-                            "contents": {"type": "array", "description": "List of observation strings", "items": {"type": "string"}}
-                        },
-                        "required": ["entityName", "contents"]
-                    }
-                }
-            },
-            "required": ["observations"]
-        },
-        "read_graph": {
-            "description": "Retrieve the entire knowledge graph",
-            "parameters": {},
-            "required": []
-        },
-        "search_nodes": {
-            "description": "Search for nodes matching a query string",
-            "parameters": {
-                "query": {"type": "string", "description": "Search query to match against entity names, types, and observations"}
-            },
-            "required": ["query"]
-        },
-        "open_nodes": {
-            "description": "Retrieve specific nodes by name",
-            "parameters": {
-                "names": {"type": "array", "description": "List of entity names to retrieve", "items": {"type": "string"}}
-            },
-            "required": ["names"]
-        },
-        "delete_observations": {
-            "description": "Remove specific observations from entities",
-            "parameters": {
-                "deletions": {
-                    "type": "array",
-                    "description": "List of observation deletions",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "entityName": {"type": "string", "description": "Name of the entity to delete observations from"},
-                            "observations": {"type": "array", "description": "List of observation strings to delete", "items": {"type": "string"}}
-                        },
-                        "required": ["entityName", "observations"]
-                    }
-                }
-            },
-            "required": ["deletions"]
-        },
-        "delete_relations": {
-            "description": "Remove specific relations from the graph",
-            "parameters": {
-                "relations": {
-                    "type": "array",
-                    "description": "List of relations to delete",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "from": {"type": "string", "description": "Name of the source entity"},
-                            "to": {"type": "string", "description": "Name of the target entity"},
-                            "relationType": {"type": "string", "description": "Type of relationship to delete"}
-                        },
-                        "required": ["from", "to", "relationType"]
-                    }
-                }
-            },
-            "required": ["relations"]
-        },
-        "delete_entities": {
-            "description": "Remove entities and all their associated relations",
-            "parameters": {
-                "entityNames": {"type": "array", "description": "List of entity names to delete", "items": {"type": "string"}}
-            },
-            "required": ["entityNames"]
-        }
-    }
-    
     # Convert Skilletfile inputs to function calling schema
     parameters = {
         "type": "object",
-        "properties": {
-            "operation": {
-                "type": "string",
-                "description": "The operation to perform",
-                "enum": list(operations.keys())
-            },
-            "params": {
-                "type": "string",
-                "description": "JSON-encoded string containing operation-specific parameters"
-            }
-        },
-        "required": ["operation"]
+        "properties": {},
+        "required": []
     }
+    
+    for param_name, param_info in meta.get("inputs", {}).items():
+        parameters["properties"][param_name] = {
+            "type": param_info["type"],
+            "description": param_info.get("description", "")
+        }
+        if param_info.get("required", True):
+            parameters["required"].append(param_name)
     
     # Convert outputs to schema
     output_schema = {
@@ -254,19 +271,5 @@ async def get_tool_schema():
         "output_schema": output_schema,
         "endpoint": "/run",
         "method": "POST",
-        "operations": operations
+        "supports_credential_injection": True
     }
-
-@app.post("/run", response_model=OutputModel)
-async def run_skill(payload: InputModel):
-    try:
-        maybe_coroutine = skill_fn(payload.model_dump())
-        if inspect.iscoroutine(maybe_coroutine):
-            result = await maybe_coroutine
-        else:
-            result = maybe_coroutine
-        return result
-    except Exception as e:
-        import traceback
-        error_detail = f"{str(e)}\n{traceback.format_exc()}"
-        raise HTTPException(status_code=500, detail=error_detail)

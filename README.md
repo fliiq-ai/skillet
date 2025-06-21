@@ -91,6 +91,39 @@ For example, a successful time skill test should show:
 
 See each example's specific README for detailed API usage instructions and expected responses.
 
+## Runtime Credential Injection
+
+Skillet skills support **runtime credential injection** for production deployments, enabling frontend applications to securely provide API keys without storing them server-side.
+
+### How It Works
+
+**Development**: Use `.env` files  
+**Production**: Inject credentials per request
+
+```javascript
+// Frontend app (e.g., Fliiq) injects user's API keys
+const response = await fetch('/api/zen_chat/run', {
+  method: 'POST',
+  body: JSON.stringify({
+    skill_input: { prompt: "Hello world" },
+    credentials: { OPENAI_API_KEY: userApiKey }
+  })
+});
+```
+
+### Enhanced Error Messages
+
+Skills provide clear guidance when credentials are missing:
+```json
+{
+  "error": "Missing required credential: OPENAI_API_KEY",
+  "how_to_get": "Get your API key from: https://platform.openai.com/api-keys",
+  "steps": ["1. Go to platform.openai.com", "2. Create API key", "..."]
+}
+```
+
+See `examples/README.md` for detailed credential requirements per skill.
+
 ## Tutorials: Using Skillet in Your Applications
 
 The `tutorials/` directory contains example applications that demonstrate how to integrate Skillet skills into your own applications. These tutorials show real-world usage patterns and best practices for developers who want to use Skillet skills in their projects.

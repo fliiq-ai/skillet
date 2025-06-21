@@ -1,0 +1,53 @@
+name: playwright_navigate
+description: Navigate to web pages using Playwright browser automation
+version: "1.0.0"
+runtime: python
+entry_point: skillet_runtime.py
+
+inputs:
+  url:
+    type: string
+    description: URL to navigate to
+    required: true
+  wait_for:
+    type: string
+    description: Wait condition (load, domcontentloaded, networkidle)
+    required: false
+    default: "load"
+  timeout:
+    type: integer
+    description: Navigation timeout in milliseconds
+    required: false
+    default: 30000
+  user_agent:
+    type: string
+    description: Custom user agent string
+    required: false
+  viewport_width:
+    type: integer
+    description: Browser viewport width
+    required: false
+    default: 1280
+  viewport_height:
+    type: integer
+    description: Browser viewport height
+    required: false
+    default: 720
+
+outputs:
+  success:
+    type: boolean
+    description: Whether navigation was successful
+  final_url:
+    type: string
+    description: Final URL after navigation (may differ due to redirects)
+  title:
+    type: string
+    description: Page title
+  status_code:
+    type: integer
+    description: HTTP status code
+  load_time:
+    type: number
+    description: Page load time in seconds
+

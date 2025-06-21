@@ -1,0 +1,13 @@
+# Runtime Configuration (local working copies)
+runtime-config.yaml
+runtime-config.*.yaml
+!runtime-config.example.yaml
+
+# Runtime-specific temporary files
+*.log
+*.pid
+.uvicorn/
+
+# Local development overrides
+local-config.yaml
+dev-config.yaml 

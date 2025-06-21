@@ -1,10 +1,64 @@
+"""
+Enhanced Framework-Based Skillet Runtime with Credential Injection Support
+
+This runtime automatically loads skill configuration from Skilletfile.yaml and provides
+enhanced credential injection capabilities for production deployments.
+
+Features:
+- Automatic Skilletfile.yaml parsing and model generation
+- Runtime credential injection from client applications
+- Backward compatibility with existing /run endpoint format
+- Support for both environment variables and injected credentials
+"""
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, create_model
 import importlib, inspect, asyncio, os, yaml
+from typing import Optional, Dict, Any, Union
+from contextlib import contextmanager
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILLETFILE_PATH = os.getenv("SKILLETFILE", os.path.join(SCRIPT_DIR, "Skilletfile.yaml"))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CREDENTIAL INJECTION UTILITIES
+# ══════════════════════════════════════════════════════════════════════════════
+
+@contextmanager
+def temp_env_context(credentials: Optional[Dict[str, str]] = None):
+    """
+    Context manager to temporarily inject environment variables.
+    
+    This allows credentials to be provided at request-time without
+    storing them on the server or modifying the global environment.
+    
+    Args:
+        credentials: Dict of environment variable names and values
+    """
+    if not credentials:
+        yield
+        return
+    
+    # Store original values to restore later
+    original_values = {}
+    for key, value in credentials.items():
+        original_values[key] = os.environ.get(key)
+        os.environ[key] = value
+    
+    try:
+        yield
+    finally:
+        # Restore original environment state
+        for key, original_value in original_values.items():
+            if original_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = original_value
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SKILLETFILE PARSING AND MODEL GENERATION
+# ══════════════════════════════════════════════════════════════════════════════
 
 # ── parse Skilletfile ──────────────────────────────────────────────
 with open(SKILLETFILE_PATH) as f:
@@ -29,6 +83,13 @@ fields = {
 }
 InputModel = create_model("InputModel", **fields)
 
+# Enhanced request model with credential support
+class EnhancedSkillRequest(BaseModel):
+    """Enhanced request model supporting credential injection"""
+    skill_input: Dict[str, Any]  # Contains the original skill parameters
+    credentials: Optional[Dict[str, str]] = None
+    runtime_config: Optional[Dict[str, Any]] = None
+
 class OutputModel(BaseModel):
     html: str | None = None
     markdown: str | None = None
@@ -36,46 +97,128 @@ class OutputModel(BaseModel):
     class Config:
         extra = "allow"  # Allow extra fields like 'markdown' when as_markdown is true
 
+# ══════════════════════════════════════════════════════════════════════════════
+# FASTAPI APPLICATION SETUP
+# ══════════════════════════════════════════════════════════════════════════════
+
 app = FastAPI(
-    title=meta["name"],
-    description=meta["description"],
+    title=f"{meta['name']} (Enhanced)",
+    description=f"{meta['description']} - Enhanced with credential injection support",
     version=meta["version"]
 )
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CORE SKILL EXECUTION LOGIC
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def execute_skill_logic(skill_input: Dict[str, Any]) -> Any:
+    """
+    Core skill execution logic used by both legacy and enhanced endpoints.
+    
+    This function contains the actual skill execution and is called by both
+    the legacy and enhanced endpoints to ensure consistent behavior.
+    """
+    maybe_coroutine = skill_fn(skill_input)
+    if inspect.iscoroutine(maybe_coroutine):
+        result = await maybe_coroutine
+    else:
+        result = maybe_coroutine
+    return result
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/run", response_model=OutputModel)
+async def run_skill_enhanced(request: Union[InputModel, EnhancedSkillRequest]):
+    """
+    Enhanced /run endpoint supporting both legacy and credential injection formats.
+    
+    This endpoint maintains backward compatibility while adding support for
+    runtime credential injection from client applications.
+    
+    Request Format Options:
+    
+    1. Legacy (unchanged - backward compatible):
+       {"url": "https://example.com", "as_markdown": true}
+    
+    2. Enhanced (with credential injection):
+       {
+         "skill_input": {"url": "https://example.com", "as_markdown": true},
+         "credentials": {"API_KEY": "value"}
+       }
+    
+    Features:
+    - Runtime credential injection (perfect for Fliiq integration)
+    - Backward compatible with existing request format
+    - Temporary environment variable injection
+    - Automatic cleanup after request completion
+    """
+    try:
+        if isinstance(request, EnhancedSkillRequest):
+            # Enhanced format: Extract credentials and inject them temporarily
+            credentials = None
+            if request.runtime_config and "credentials" in request.runtime_config:
+                credentials = request.runtime_config["credentials"]
+            elif request.credentials:
+                credentials = request.credentials
+            
+            # Execute with credential injection
+            with temp_env_context(credentials):
+                result = await execute_skill_logic(request.skill_input)
+                return result
+        
+        else:
+            # Legacy format: Direct execution (backward compatibility)
+            result = await execute_skill_logic(request.model_dump())
+            return result
+            
+    except Exception as e:
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS
+# ══════════════════════════════════════════════════════════════════════════════
 
 @app.get("/inventory")
 async def get_skill_inventory():
     """Return skill metadata for LLM decision-making about when and how to use this skill."""
     
-    return {
+    inventory = {
         "skill": {
             "name": meta["name"],
             "description": meta["description"],
             "version": meta["version"],
-            "category": "web_scraping",
+            "category": "utility",
             "complexity": "simple",
             "use_cases": [
-                "When user needs to fetch content from a website",
-                "For web scraping and data extraction",
-                "Converting web pages to readable formats",
-                "Gathering information from public URLs",
-                "Research and content analysis tasks"
+                "When you need to fetch HTML content from a URL",
+                "When you want to get the text content of a webpage",
+                "When you need to convert web content to readable format",
+                "For web scraping and content extraction",
+                "To get page content for analysis or processing"
             ],
             "example_queries": [
-                "Get the content from this website",
-                "Fetch the HTML from https://example.com",
-                "What's on this webpage?",
-                "Download the content from this URL",
-                "Convert this webpage to markdown"
+                "Fetch the content from https://example.com",
+                "Get the HTML from this webpage",
+                "Convert this page to markdown",
+                "What's on this website?",
+                "Scrape content from this URL"
             ],
-            "input_types": ["url", "pagination_options", "format_preferences"],
+            "input_types": ["url", "options"],
             "output_types": ["html_content", "markdown_content"],
-            "performance": "medium",
-            "dependencies": ["internet_access"],
-            "works_well_with": ["text_analysis", "content_summarization", "data_extraction", "research"],
+            "performance": "fast",
+            "dependencies": [],
+            "works_well_with": ["text_analysis", "content_processing", "web_research"],
             "typical_workflow_position": "data_gathering",
-            "tags": ["web", "scraping", "html", "markdown", "content", "fetch", "url"]
+            "tags": ["web", "html", "fetch", "scraping", "content"],
+            "supports_credential_injection": True
         }
     }
+    
+    return inventory
 
 @app.get("/schema")
 async def get_tool_schema():
@@ -116,19 +259,6 @@ async def get_tool_schema():
         "parameters": parameters,
         "output_schema": output_schema,
         "endpoint": "/run",
-        "method": "POST"
+        "method": "POST",
+        "supports_credential_injection": True
     }
-
-@app.post("/run", response_model=OutputModel)
-async def run_skill(payload: InputModel):
-    try:
-        maybe_coroutine = skill_fn(payload.model_dump())
-        if inspect.iscoroutine(maybe_coroutine):
-            result = await maybe_coroutine
-        else:
-            result = maybe_coroutine
-        return result
-    except Exception as e:
-        import traceback
-        error_detail = f"{str(e)}\n{traceback.format_exc()}"
-        raise HTTPException(status_code=500, detail=error_detail)

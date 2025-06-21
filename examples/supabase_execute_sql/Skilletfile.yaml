@@ -1,0 +1,43 @@
+name: supabase_execute_sql
+description: Execute SQL queries on Supabase databases
+version: "1.0.0"
+runtime: python
+entry_point: skillet_runtime.py
+
+inputs:
+  sql:
+    type: string
+    description: SQL query to execute
+    required: true
+  database_url:
+    type: string
+    description: Supabase database URL
+    required: false
+  read_only:
+    type: boolean
+    description: Restrict to read-only operations
+    required: false
+    default: true
+  timeout:
+    type: integer
+    description: Query timeout in seconds
+    required: false
+    default: 30
+
+outputs:
+  success:
+    type: boolean
+    description: Whether query executed successfully
+  data:
+    type: array
+    description: Query result data
+  row_count:
+    type: integer
+    description: Number of rows affected/returned
+  execution_time:
+    type: number
+    description: Query execution time in seconds
+  query_type:
+    type: string
+    description: Type of SQL operation (SELECT, INSERT, etc.)
+
