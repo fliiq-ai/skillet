@@ -465,6 +465,108 @@ async def health():
         "supports_credential_injection": True
     }
 
+# ═══════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/inventory")
+async def get_skill_inventory():
+    """Return skill metadata for LLM decision-making about when and how to use this skill."""
+    
+    inventory = {
+        "skill": {
+            "name": "Context7 Documentation Search",
+            "description": "Search and retrieve documentation from popular development libraries and frameworks including React, Next.js, and FastAPI",
+            "version": "1.0.0",
+            "category": "documentation",
+            "complexity": "simple",
+            "use_cases": [
+                "Finding documentation for React components and patterns",
+                "Learning Next.js App Router features",
+                "Understanding FastAPI development concepts",
+                "Quick reference for framework-specific syntax",
+                "Developer onboarding and learning"
+            ],
+            "example_queries": [
+                "How do I create a React component?",
+                "Show me Next.js routing examples",
+                "FastAPI getting started guide",
+                "React hooks documentation",
+                "Next.js layout examples"
+            ],
+            "input_types": ["search_query", "library_name", "version"],
+            "output_types": ["formatted_documentation", "source_urls"],
+            "performance": "fast",
+            "dependencies": [],
+            "works_well_with": ["code_generation", "tutorials", "examples", "learning"],
+            "typical_workflow_position": "research",
+            "tags": ["documentation", "search", "learning", "reference", "quick"],
+            "supports_credential_injection": True
+        }
+    }
+    
+    return inventory
+
+@app.get("/schema")
+async def get_tool_schema():
+    """Return the tool schema in a standardized format for LLM consumption."""
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Search query for finding relevant documentation"
+            },
+            "library": {
+                "type": "string",
+                "description": "Optional: Specific library to search within (e.g., 'react', 'nextjs', 'fastapi')"
+            },
+            "version": {
+                "type": "string", 
+                "description": "Optional: Version of the library (default: 'latest')"
+            },
+            "max_results": {
+                "type": "integer",
+                "description": "Optional: Maximum number of results to return (default: 5)"
+            }
+        },
+        "required": ["query"]
+    }
+    
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "documentation": {
+                "type": "string",
+                "description": "Formatted documentation content matching the search query"
+            },
+            "source_url": {
+                "type": "string",
+                "description": "Primary source URL for the documentation"
+            },
+            "library_info": {
+                "type": "object",
+                "description": "Information about the library and search parameters used"
+            },
+            "results_count": {
+                "type": "integer",
+                "description": "Number of documentation results found and included"
+            }
+        }
+    }
+    
+    return {
+        "name": "Context7 Documentation Search",
+        "description": "Search and retrieve documentation from popular development libraries and frameworks",
+        "version": "1.0.0",
+        "parameters": parameters,
+        "output_schema": output_schema,
+        "endpoint": "/run",
+        "method": "POST",
+        "supports_credential_injection": True
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

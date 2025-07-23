@@ -1,0 +1,11 @@
+{
+  "entities": {
+    "John": {
+      "entityType": "person",
+      "observations": [
+        "Speaks fluent Spanish"
+      ]
+    }
+  },
+  "relations": []
+}

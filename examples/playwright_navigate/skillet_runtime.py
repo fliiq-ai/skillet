@@ -303,6 +303,120 @@ async def list_browsers():
         "default": "chromium"
     }
 
+# ═══════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS  
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/inventory")
+async def get_skill_inventory():
+    """Return skill metadata for LLM decision-making about when and how to use this skill."""
+    
+    inventory = {
+        "skill": {
+            "name": "Playwright Web Navigation",
+            "description": "Navigate to web pages using Playwright browser automation, with support for custom viewports, wait conditions, and user agents",
+            "version": "1.0.0",
+            "category": "web_automation",
+            "complexity": "medium",
+            "use_cases": [
+                "Testing website availability and load times",
+                "Taking screenshots of web pages",
+                "Checking page titles and URLs after redirects", 
+                "Web scraping preparation and reconnaissance",
+                "Automated browser testing and validation"
+            ],
+            "example_queries": [
+                "Navigate to https://example.com and check if it loads",
+                "Visit this website and tell me the page title",
+                "Check how long it takes to load this page",
+                "Navigate to this URL with mobile viewport",
+                "Test if this website redirects properly"
+            ],
+            "input_types": ["url", "viewport_settings", "wait_conditions"],
+            "output_types": ["navigation_result", "load_metrics", "page_info"],
+            "performance": "medium",
+            "dependencies": ["playwright", "chromium_browser"],
+            "works_well_with": ["web_scraping", "testing", "monitoring", "screenshots"],
+            "typical_workflow_position": "data_gathering",
+            "tags": ["browser", "navigation", "web", "automation", "testing"],
+            "supports_credential_injection": True
+        }
+    }
+    
+    return inventory
+
+@app.get("/schema")
+async def get_tool_schema():
+    """Return the tool schema in a standardized format for LLM consumption."""
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "url": {
+                "type": "string",
+                "description": "The fully-qualified URL to navigate to (must include http:// or https://)"
+            },
+            "wait_for": {
+                "type": "string",
+                "description": "Wait condition for page loading: 'load', 'domcontentloaded', or 'networkidle' (default: 'load')"
+            },
+            "timeout": {
+                "type": "integer",
+                "description": "Navigation timeout in milliseconds (default: 30000)"
+            },
+            "user_agent": {
+                "type": "string",
+                "description": "Optional: Custom user agent string for the browser"
+            },
+            "viewport_width": {
+                "type": "integer", 
+                "description": "Browser viewport width in pixels (default: 1280)"
+            },
+            "viewport_height": {
+                "type": "integer",
+                "description": "Browser viewport height in pixels (default: 720)"
+            }
+        },
+        "required": ["url"]
+    }
+    
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the navigation was successful"
+            },
+            "final_url": {
+                "type": "string",
+                "description": "The final URL after any redirects"
+            },
+            "title": {
+                "type": "string",
+                "description": "The page title"
+            },
+            "status_code": {
+                "type": "integer",
+                "description": "HTTP status code of the response"
+            },
+            "load_time": {
+                "type": "number",
+                "description": "Page load time in seconds"
+            }
+        }
+    }
+    
+    return {
+        "name": "Playwright Web Navigation",
+        "description": "Navigate to web pages using Playwright browser automation with detailed metrics",
+        "version": "1.0.0",
+        "parameters": parameters,
+        "output_schema": output_schema,
+        "endpoint": "/run",
+        "method": "POST",
+        "supports_credential_injection": True
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -394,6 +394,116 @@ async def list_query_types():
         "default_mode": "read_only"
     }
 
+# ═══════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/inventory")
+async def get_skill_inventory():
+    """Return skill metadata for LLM decision-making about when and how to use this skill."""
+    
+    inventory = {
+        "skill": {
+            "name": "Supabase SQL Executor",
+            "description": "Execute SQL queries against Supabase databases with safety controls, query validation, and read-only mode support",
+            "version": "1.0.0",
+            "category": "database",
+            "complexity": "medium",
+            "use_cases": [
+                "Querying application data from Supabase databases",
+                "Running analytics and reporting queries",
+                "Data exploration and analysis",
+                "Database administration and maintenance",
+                "Real-time data retrieval for applications"
+            ],
+            "required_credentials": {
+                "SUPABASE_URL": "Supabase database URL",
+                "SUPABASE_ANON_KEY": "Supabase API key for read-only operations"
+            },
+            "example_queries": [
+                "SELECT * FROM users WHERE active = true",
+                "Get the count of orders from last month",
+                "Show me the top 10 products by sales",
+                "Find all customers in California",
+                "Run this analytics query on our database"
+            ],
+            "input_types": ["sql_query", "database_url", "read_only_flag"],
+            "output_types": ["query_results", "execution_metrics", "row_data"],
+            "performance": "medium",
+            "dependencies": ["supabase", "postgresql"],
+            "works_well_with": ["analytics", "reporting", "data_visualization", "administration"],
+            "typical_workflow_position": "data_access",
+            "tags": ["database", "sql", "supabase", "query", "data"],
+            "supports_credential_injection": True
+        }
+    }
+    
+    return inventory
+
+@app.get("/schema")
+async def get_tool_schema():
+    """Return the tool schema in a standardized format for LLM consumption."""
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "sql": {
+                "type": "string",
+                "description": "SQL query to execute against the Supabase database"
+            },
+            "database_url": {
+                "type": "string",
+                "description": "Optional: Supabase database URL (can also be provided via credentials)"
+            },
+            "read_only": {
+                "type": "boolean",
+                "description": "Whether to run in read-only mode (only SELECT queries allowed) - default: true"
+            },
+            "timeout": {
+                "type": "integer",
+                "description": "Query timeout in seconds (default: 30)"
+            }
+        },
+        "required": ["sql"]
+    }
+    
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the query executed successfully"
+            },
+            "data": {
+                "type": "array",
+                "description": "Array of result rows (objects) returned by the query"
+            },
+            "row_count": {
+                "type": "integer",
+                "description": "Number of rows affected or returned"
+            },
+            "execution_time": {
+                "type": "number",
+                "description": "Query execution time in seconds"
+            },
+            "query_type": {
+                "type": "string",
+                "description": "Type of SQL query executed (SELECT, INSERT, UPDATE, etc.)"
+            }
+        }
+    }
+    
+    return {
+        "name": "Supabase SQL Executor",
+        "description": "Execute SQL queries against Supabase databases with safety controls and validation",
+        "version": "1.0.0",
+        "parameters": parameters,
+        "output_schema": output_schema,
+        "endpoint": "/run",
+        "method": "POST",
+        "supports_credential_injection": True
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

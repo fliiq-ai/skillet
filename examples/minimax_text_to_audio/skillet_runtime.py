@@ -330,6 +330,111 @@ async def health():
             "error": str(e)
         }
 
+# ═══════════════════════════════════════════════════════════════════
+# DISCOVERY & METADATA ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/inventory")
+async def get_skill_inventory():
+    """Return skill metadata for LLM decision-making about when and how to use this skill."""
+    
+    inventory = {
+        "skill": {
+            "name": "MiniMax Text-to-Audio",
+            "description": "Convert text to high-quality audio using MiniMax's text-to-speech API with multiple voice options and audio controls",
+            "version": "1.0.0",
+            "category": "ai_services",
+            "complexity": "medium",
+            "use_cases": [
+                "Converting articles or documents to audio",
+                "Creating voiceovers for presentations",
+                "Generating audio content for accessibility",
+                "Text-to-speech for language learning",
+                "Automated audio content generation"
+            ],
+            "required_credentials": {
+                "MINIMAX_API_KEY": "MiniMax API key for text-to-speech"
+            },
+            "example_queries": [
+                "Convert this text to audio with a male voice",
+                "Generate speech from this paragraph",
+                "Create an audio file from this text using a female voice",
+                "Turn this document into spoken audio",
+                "Make an audio version of this text"
+            ],
+            "input_types": ["text_content", "voice_selection", "audio_settings"],
+            "output_types": ["audio_file", "audio_url", "voice_metadata"],
+            "performance": "medium",
+            "dependencies": ["minimax_api", "audio_processing"],
+            "works_well_with": ["content_creation", "accessibility", "podcasting", "education"],
+            "typical_workflow_position": "content_generation",
+            "tags": ["audio", "tts", "voice", "speech", "ai"],
+            "supports_credential_injection": True
+        }
+    }
+    
+    return inventory
+
+@app.get("/schema")
+async def get_tool_schema():
+    """Return the tool schema in a standardized format for LLM consumption."""
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "text": {
+                "type": "string",
+                "description": "Text content to convert to audio"
+            },
+            "voice_id": {
+                "type": "string",
+                "description": "Voice ID to use for text-to-speech (default: 'male-qn-qingse')"
+            },
+            "speed": {
+                "type": "number",
+                "description": "Speech speed multiplier between 0.5 and 2.0 (default: 1.0)"
+            },
+            "volume": {
+                "type": "number",
+                "description": "Audio volume between 0.1 and 1.0 (default: 1.0)"
+            }
+        },
+        "required": ["text"]
+    }
+    
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "audio_url": {
+                "type": "string",
+                "description": "URL to the generated audio file"
+            },
+            "audio_file": {
+                "type": "string",
+                "description": "Local path to the downloaded audio file"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Estimated duration of the audio in seconds"
+            },
+            "voice_used": {
+                "type": "string",
+                "description": "Voice ID that was used for generation"
+            }
+        }
+    }
+    
+    return {
+        "name": "MiniMax Text-to-Audio",
+        "description": "Convert text to high-quality audio using MiniMax's text-to-speech API",
+        "version": "1.0.0",
+        "parameters": parameters,
+        "output_schema": output_schema,
+        "endpoint": "/run",
+        "method": "POST",
+        "supports_credential_injection": True
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

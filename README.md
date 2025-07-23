@@ -124,6 +124,188 @@ Skills provide clear guidance when credentials are missing:
 
 See `examples/README.md` for detailed credential requirements per skill.
 
+## Skill Discovery Endpoints: Runtime Intelligence for LLMs
+
+All Skillet skills provide **standardized discovery endpoints** that enable LLMs and applications to intelligently understand when, how, and why to use each skill. This creates truly adaptive systems that can make smart decisions about skill usage without hardcoded logic.
+
+### The Two Discovery Endpoints
+
+#### 🧠 `/inventory` - LLM Decision Intelligence
+The inventory endpoint provides **rich metadata** designed for LLM consumption, helping AI agents understand:
+- **When to use** this skill (use cases, example queries)
+- **How it fits** into workflows (complexity, performance characteristics)
+- **What it works well with** (related skills, typical workflow positions)
+
+```bash
+# Get skill metadata for LLM decision-making
+curl http://localhost:8000/inventory
+```
+
+**Example Response:**
+```json
+{
+  "skill": {
+    "name": "Zen Chat", 
+    "description": "Simple chat interface with automatic model selection",
+    "category": "ai_services",
+    "complexity": "simple",
+    "use_cases": [
+      "When user needs conversational AI responses",
+      "For chat applications and interactive dialogues",
+      "When you need automatic model selection (OpenAI/Gemini)"
+    ],
+    "example_queries": [
+      "Can you help me write an email?",
+      "What's the weather like?", 
+      "Explain quantum computing simply"
+    ],
+    "works_well_with": ["content_creation", "customer_support", "education"],
+    "typical_workflow_position": "conversation",
+    "tags": ["ai", "chat", "conversation", "llm"],
+    "supports_credential_injection": true
+  }
+}
+```
+
+#### 🔧 `/schema` - Technical Specification  
+The schema endpoint provides **precise technical details** for developers and systems that need to call the skill:
+- **Exact parameters** with types and validation rules
+- **Response format** specification 
+- **Required vs optional** fields
+- **API contract** information
+
+```bash
+# Get technical schema for integration
+curl http://localhost:8000/schema
+```
+
+**Example Response:**
+```json
+{
+  "name": "Zen Chat",
+  "description": "Simple chat interface with automatic model selection",
+  "version": "1.0.0",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "prompt": {
+        "type": "string",
+        "description": "User's message or question"
+      },
+      "model": {
+        "type": "string", 
+        "description": "AI model: 'openai', 'gemini', or 'auto'"
+      }
+    },
+    "required": ["prompt"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "response": {"type": "string"},
+      "model_used": {"type": "string"},
+      "token_count": {"type": "integer"}
+    }
+  },
+  "endpoint": "/run",
+  "method": "POST",
+  "supports_credential_injection": true
+}
+```
+
+### 🚀 Production Benefits
+
+**For LLM Applications:**
+- **Smart Skill Selection**: LLMs can read inventory to choose the right skill
+- **Context-Aware Usage**: Rich metadata helps LLMs understand when NOT to use a skill
+- **Dynamic Function Calling**: Build OpenAI function definitions from schemas at runtime
+- **Better User Experience**: More intelligent skill routing leads to better results
+
+**For Developers:**
+- **Runtime Discovery**: No need to hardcode skill APIs or parameters
+- **Auto-generated Clients**: Schema enables automatic client generation
+- **Version Compatibility**: Check schema changes before deploying
+- **Integration Testing**: Validate parameters against schema before calls
+
+### 💡 Real-World Usage Patterns
+
+**LLM Agent Decision Making:**
+```python
+# LLM agent intelligently selects skills based on inventory
+def select_skill_for_query(user_query: str, available_skills: list):
+    for skill in available_skills:
+        inventory = requests.get(f"{skill['url']}/inventory").json()
+        
+        # LLM evaluates if skill matches user intent
+        if matches_user_intent(user_query, inventory['skill']['use_cases']):
+            return skill
+    return None
+```
+
+**Dynamic OpenAI Function Calling:**
+```python
+# Build function definitions dynamically from schemas
+functions = []
+for skill_url in discovered_skills:
+    schema = requests.get(f"{skill_url}/schema").json()
+    functions.append({
+        "name": schema["name"].replace(" ", "_").lower(),
+        "description": schema["description"], 
+        "parameters": schema["parameters"]
+    })
+
+# Use with OpenAI - no hardcoding required!
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": user_query}],
+    functions=functions,
+    function_call="auto"
+)
+```
+
+**Application Integration:**
+```javascript
+// Frontend app discovers skills and builds UI dynamically
+const skills = await Promise.all(
+  discoveredSkills.map(async (skillUrl) => {
+    const [inventory, schema] = await Promise.all([
+      fetch(`${skillUrl}/inventory`).then(r => r.json()),
+      fetch(`${skillUrl}/schema`).then(r => r.json())
+    ]);
+    
+    return {
+      metadata: inventory.skill,
+      apiSpec: schema,
+      url: skillUrl
+    };
+  })
+);
+
+// Build dynamic UI based on discovered capabilities
+skills.forEach(skill => {
+  if (skill.metadata.category === 'ai_services') {
+    renderAISkillCard(skill);
+  }
+});
+```
+
+### 🔍 Complete Endpoint Coverage
+
+All 8 example skills now provide complete discovery endpoints:
+
+```
+✅ anthropic_time      - /run, /inventory, /schema, /health
+✅ anthropic_fetch     - /run, /inventory, /schema, /health  
+✅ anthropic_memory    - /run, /inventory, /schema, /health
+✅ zen_chat           - /run, /chat, /inventory, /schema, /health
+✅ context7_docs      - /run, /docs, /inventory, /schema, /health
+✅ playwright_navigate - /run, /navigate, /inventory, /schema, /health
+✅ supabase_execute_sql - /run, /execute_sql, /inventory, /schema, /health
+✅ minimax_text_to_audio - /run, /text_to_audio, /inventory, /schema, /health
+```
+
+This **standardized discovery pattern** makes every Skillet skill self-documenting and enables truly intelligent runtime integration. LLMs can discover, understand, and use skills without any hardcoded knowledge - creating adaptive systems that evolve as new skills become available.
+
 ## Tutorials: Using Skillet in Your Applications
 
 The `tutorials/` directory contains example applications that demonstrate how to integrate Skillet skills into your own applications. These tutorials show real-world usage patterns and best practices for developers who want to use Skillet skills in their projects.

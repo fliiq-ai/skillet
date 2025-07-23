@@ -426,6 +426,54 @@ async def get_skill_inventory():
         }
     }
 
+@app.get("/schema")
+async def get_tool_schema():
+    """Return the tool schema in a standardized format for LLM consumption."""
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "prompt": {
+                "type": "string",
+                "description": "The user's message or question to send to the AI"
+            },
+            "model": {
+                "type": "string", 
+                "description": "The AI model to use: 'openai' for OpenAI GPT, 'gemini' for Google Gemini, or 'auto' for automatic selection"
+            }
+        },
+        "required": ["prompt"]
+    }
+    
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "response": {
+                "type": "string",
+                "description": "The AI's response to the user's prompt"
+            },
+            "model_used": {
+                "type": "string",
+                "description": "The actual AI model that was used to generate the response"
+            },
+            "token_count": {
+                "type": "integer",
+                "description": "Estimated number of tokens used in the conversation"
+            }
+        }
+    }
+    
+    return {
+        "name": "Zen Chat",
+        "description": "A simple, focused chat interface that automatically chooses between OpenAI GPT and Google Gemini models for optimal responses",
+        "version": "1.0.0",
+        "parameters": parameters,
+        "output_schema": output_schema,
+        "endpoint": "/run",
+        "method": "POST",
+        "supports_credential_injection": True
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

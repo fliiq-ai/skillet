@@ -1,0 +1,57 @@
+# Render deployment configuration for Fliiq Skillet Service
+# This service provides HTTP-native skill execution for Fliiq agents
+
+services:
+  - type: web
+    name: fliiq-skillet-runtime
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd services/runtime && python multi_skill_host.py --config runtime-config.yaml --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Allow CORS from Fliiq backend (will be updated with actual URL after Fliiq deployment)
+      - key: ALLOWED_ORIGINS
+        value: "*"  # Temporarily allow all origins, restrict after Fliiq deployment
+      - key: SKILL_DISCOVERY_ENABLED
+        value: "true"
+      - key: HEALTH_CHECK_ENABLED
+        value: "true"
+    
+    # Health check configuration
+    healthCheckPath: /health
+    
+    # Scaling configuration for beta users (30-50 users)
+    numInstances: 1  # Start with single instance, can scale up if needed
+    
+    # Auto-deploy from main branch
+    autoDeploy: true
+    
+    # Custom domains (configure after deployment)
+    # domains:
+    #   - name: skillet.fliiq.ai
+
+# Environment-specific configurations
+environments:
+  production:
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Add production-specific skill configurations here
+      
+  staging:
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: LOG_LEVEL
+        value: DEBUG

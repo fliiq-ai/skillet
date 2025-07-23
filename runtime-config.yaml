@@ -1,0 +1,37 @@
+server:
+  host: 0.0.0.0
+  port: 8000
+  reload: true
+skills:
+- enabled: true
+  mount: anthropic-fetch
+  name: anthropic_fetch_skill
+  path: ./examples/anthropic_fetch
+- enabled: true
+  mount: anthropic-memory
+  name: anthropic_memory_skill
+  path: ./examples/anthropic_memory
+- enabled: true
+  mount: anthropic-time
+  name: anthropic_time_skill
+  path: ./examples/anthropic_time
+- enabled: true
+  mount: context7-docs
+  name: context7_docs_skill
+  path: ./examples/context7_docs
+- enabled: true
+  mount: minimax-text-to-audio
+  name: minimax_text_to_audio_skill
+  path: ./examples/minimax_text_to_audio
+- enabled: true
+  mount: playwright-navigate
+  name: playwright_navigate_skill
+  path: ./examples/playwright_navigate
+- enabled: true
+  mount: supabase-execute-sql
+  name: supabase_execute_sql_skill
+  path: ./examples/supabase_execute_sql
+- enabled: true
+  mount: zen-chat
+  name: zen_chat_skill
+  path: ./examples/zen_chat
