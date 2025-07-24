@@ -12,8 +12,6 @@ services:
     envVars:
       - key: PORT
         value: 8000
-      - key: PYTHONPATH
-        value: /opt/render/project/src
       - key: ENVIRONMENT
         value: production
       - key: LOG_LEVEL
