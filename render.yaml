@@ -8,7 +8,7 @@ services:
     region: oregon
     plan: starter
     buildCommand: pip install -r requirements.txt
-    startCommand: cd services/runtime && python multi_skill_host.py --config runtime-config.yaml --host 0.0.0.0 --port $PORT
+    startCommand: python services/runtime/multi_skill_host.py --config services/runtime/runtime-config.yaml --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: 8000

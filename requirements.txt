@@ -23,6 +23,7 @@ aiohttp>=3.9.0
 
 # Markdown processing
 markdown2>=2.4.0
+markdownify>=0.11.6
 
 # Optional dependencies (install manually if needed)
 # minimax (for text-to-audio) - not available via pip 
